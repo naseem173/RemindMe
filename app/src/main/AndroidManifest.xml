@@ -13,7 +13,8 @@
         android:name=".RemindMeApplication"
         android:allowBackup="false"
         android:directBootAware="true"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="RemindMe"
         android:supportsRtl="true"
         android:theme="@style/Theme.RemindMe">

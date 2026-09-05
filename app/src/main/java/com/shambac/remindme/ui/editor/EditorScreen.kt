@@ -1,11 +1,15 @@
 package com.shambac.remindme.ui.editor
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -19,12 +23,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -40,6 +45,8 @@ fun EditorScreen(state: EditorUiState, actions: EditorViewModel, onDone: () -> U
     var advanced by remember { mutableStateOf(false) }
     var repeatExpanded by remember { mutableStateOf(false) }
     var customOpen by remember { mutableStateOf(false) }
+    var datePickerOpen by remember { mutableStateOf(false) }
+    var timePickerOpen by remember { mutableStateOf(false) }
     var customInterval by remember { mutableStateOf("1") }
     var customUnit by remember { mutableStateOf("day") }
     var customWeekdays by remember { mutableStateOf(setOf<DayOfWeek>()) }
@@ -50,16 +57,45 @@ fun EditorScreen(state: EditorUiState, actions: EditorViewModel, onDone: () -> U
     var monthlyOrdinal by remember { mutableStateOf("2") }
     var monthlyWeekday by remember { mutableStateOf(state.date.dayOfWeek) }
     var customCount by remember { mutableStateOf("10") }
+    val context = LocalContext.current
+    LaunchedEffect(datePickerOpen) {
+        if (datePickerOpen) {
+            DatePickerDialog(context, { _, year, month, day ->
+                actions.date(LocalDate.of(year, month + 1, day))
+                datePickerOpen = false
+            }, state.date.year, state.date.monthValue - 1, state.date.dayOfMonth).apply {
+                setOnDismissListener { datePickerOpen = false }
+            }.show()
+        }
+    }
+    LaunchedEffect(timePickerOpen) {
+        if (timePickerOpen) {
+            TimePickerDialog(context, { _, hour, minute ->
+                actions.time(LocalTime.of(hour, minute))
+                timePickerOpen = false
+            }, state.time.hour, state.time.minute, true).apply {
+                setOnDismissListener { timePickerOpen = false }
+            }.show()
+        }
+    }
     Scaffold(topBar = { TopAppBar(title = { Text(if (state.id == null) "Add reminder" else "Edit reminder") }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(state.title, actions::title, Modifier.fillMaxWidth(), label = { Text("Title") }, singleLine = true, isError = state.error != null)
             OutlinedTextField(state.description, actions::description, Modifier.fillMaxWidth(), label = { Text("Description (optional)") }, minLines = 2)
-            OutlinedTextField(state.date.toString(), { value -> runCatching { actions.date(LocalDate.parse(value)) } }, Modifier.fillMaxWidth(), label = { Text("Date (YYYY-MM-DD)") }, singleLine = true)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = state.date.toString(), onValueChange = {}, modifier = Modifier.weight(1f), label = { Text("Date") }, readOnly = true)
+                Button(onClick = { datePickerOpen = true }, modifier = Modifier.sizeIn(minWidth = 96.dp, minHeight = 48.dp)) { Text("Choose") }
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Date-only reminder")
                 Checkbox(checked = state.dateOnly, onCheckedChange = actions::dateOnly, modifier = Modifier.semantics { contentDescription = "Date-only reminder" })
             }
-            if (!state.dateOnly) OutlinedTextField(state.time.format(DateTimeFormatter.ofPattern("HH:mm")), { value -> runCatching { actions.time(LocalTime.parse(value)) } }, Modifier.fillMaxWidth(), label = { Text("Time (24-hour HH:mm)") }, singleLine = true)
+            if (!state.dateOnly) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = state.time.format(DateTimeFormatter.ofPattern("HH:mm")), onValueChange = {}, modifier = Modifier.weight(1f), label = { Text("Time") }, readOnly = true)
+                    Button(onClick = { timePickerOpen = true }, modifier = Modifier.sizeIn(minWidth = 96.dp, minHeight = 48.dp)) { Text("Choose") }
+                }
+            }
             ExposedDropdownMenuBox(expanded = repeatExpanded, onExpandedChange = { repeatExpanded = !repeatExpanded }) {
                 OutlinedTextField(value = repeatLabel(state.repeat), onValueChange = {}, readOnly = true, label = { Text("Repeat") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(repeatExpanded) }, modifier = Modifier.menuAnchor().fillMaxWidth())
                 DropdownMenu(expanded = repeatExpanded, onDismissRequest = { repeatExpanded = false }) {

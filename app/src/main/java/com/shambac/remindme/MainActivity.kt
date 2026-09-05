@@ -32,12 +32,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -78,7 +80,16 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch { runCatching { scheduler.get().reconcileAll() } }
         setContent {
             val appSettings by settings.settings.collectAsStateWithLifecycle(initialValue = com.shambac.remindme.data.settings.AppSettings())
-            RemindMeTheme { if (appSettings.onboardingComplete) RemindMeApp() else OnboardingHost(settings, scheduler) }
+            RemindMeTheme(
+                darkTheme = when (appSettings.theme) {
+                    "LIGHT" -> false
+                    "DARK" -> true
+                    else -> androidx.compose.foundation.isSystemInDarkTheme()
+                },
+                dynamicColor = appSettings.dynamicColor,
+            ) {
+                if (appSettings.onboardingComplete) RemindMeApp() else OnboardingHost(settings, scheduler)
+            }
         }
     }
 }
@@ -87,6 +98,7 @@ class MainActivity : ComponentActivity() {
 private fun OnboardingHost(settings: SettingsRepository, scheduler: Lazy<ReminderScheduler>) {
     var page by remember { mutableIntStateOf(0) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { page = 2 }
     OnboardingScreen(
         page = page,
@@ -96,7 +108,7 @@ private fun OnboardingHost(settings: SettingsRepository, scheduler: Lazy<Reminde
             if (Build.VERSION.SDK_INT >= 34) context.startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}")))
             page = 3
         },
-        onTest = { (context as? MainActivity)?.lifecycleScope?.launch { scheduler.get().scheduleTestAlarm() } },
+        onTest = { scope.launch { scheduler.get().scheduleTestAlarm() } },
     )
     if (page >= 4) LaunchedEffect(Unit) { settings.update { it.copy(onboardingComplete = true) } }
 }
@@ -116,24 +128,106 @@ fun RemindMeApp() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeScreen(onAdd: () -> Unit, onEdit: (String) -> Unit, onCalendar: () -> Unit, onHealth: () -> Unit, onSettings: () -> Unit, vm: com.shambac.remindme.ui.home.HomeViewModel = hiltViewModel()) {
+private fun HomeScreen(
+    onAdd: () -> Unit,
+    onEdit: (String) -> Unit,
+    onCalendar: () -> Unit,
+    onHealth: () -> Unit,
+    onSettings: () -> Unit,
+    vm: com.shambac.remindme.ui.home.HomeViewModel = hiltViewModel(),
+) {
     val state by vm.state.collectAsStateWithLifecycle()
-    Scaffold(topBar = { TopAppBar(title = { Text("Today / Upcoming") }, actions = { IconButton(onClick = onCalendar) { Icon(Icons.Default.CalendarMonth, "Calendar") }; IconButton(onClick = onHealth) { Icon(Icons.Default.HealthAndSafety, "Alarm health") }; IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") } }) }, floatingActionButton = { FloatingActionButton(onClick = onAdd, modifier = Modifier.semantics { contentDescription = "Add reminder" }) { Icon(Icons.Default.Add, "Add reminder") } }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(value = state.search, onValueChange = vm::search, modifier = Modifier.fillMaxWidth(), label = { Text("Search reminders") }, singleLine = true)
-            Text("Next alarm", fontWeight = FontWeight.Bold)
-            state.upcoming.firstOrNull()?.let { next -> Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text(next.instant.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM))); Text(next.title, fontWeight = FontWeight.Bold); next.description?.let { description -> Text(description) } } } }
-            if (state.setupIncomplete) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("RemindMe") },
+                actions = {
+                    IconButton(onClick = onCalendar) { Icon(Icons.Default.CalendarMonth, "Open calendar") }
+                    IconButton(onClick = onHealth) { Icon(Icons.Default.HealthAndSafety, "Alarm health") }
+                    IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") }
+                },
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAdd, modifier = Modifier.semantics { contentDescription = "Add reminder" }) {
+                Icon(Icons.Default.Add, "Add reminder")
+            }
+        },
+    ) { padding ->
+        LazyColumn(
+            Modifier.padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Your reminders", style = MaterialTheme.typography.headlineMedium)
+                    Text("Simple alarms for the moments that matter.", style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+            item {
+                OutlinedTextField(
+                    value = state.search,
+                    onValueChange = vm::search,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Search reminders") },
+                    singleLine = true,
+                )
+            }
+            item {
+                val next = state.upcoming.firstOrNull()
                 Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Alarm setup incomplete", fontWeight = FontWeight.Bold)
-                        Text("Open Alarm health to fix exact-alarm or notification access.")
-                        Button(onClick = onHealth) { Text("Open Alarm health") }
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("NEXT ALARM", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        if (next == null) {
+                            Text("No upcoming alarms", style = MaterialTheme.typography.titleMedium)
+                            Text("Tap + to create your first reminder.", style = MaterialTheme.typography.bodyMedium)
+                        } else {
+                            Text(next.title, style = MaterialTheme.typography.titleLarge)
+                            Text(next.instant.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)), style = MaterialTheme.typography.bodyMedium)
+                            next.description?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                        }
                     }
                 }
             }
-            if (state.reminders.isEmpty()) Text("No reminders yet. Tap + to add one.")
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(state.reminders, key = { it.id }) { item -> Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) { Column(Modifier.weight(1f)) { Text(item.title, fontWeight = FontWeight.Bold); Text(item.startDate.toString()); item.description?.let { description -> Text(description) } }; Switch(checked = item.enabled, onCheckedChange = { vm.setEnabled(item.id, it) }); Button(onClick = { onEdit(item.id) }) { Text("Edit") } } } } }
+            if (state.setupIncomplete) {
+                item {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Alarm setup incomplete", style = MaterialTheme.typography.titleMedium)
+                            Text("Check permissions before relying on reminders.", style = MaterialTheme.typography.bodyMedium)
+                            Button(onClick = onHealth) { Text("Open alarm health") }
+                        }
+                    }
+                }
+            }
+            item { Text("All reminders", style = MaterialTheme.typography.titleLarge) }
+            if (state.reminders.isEmpty()) {
+                item {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Nothing planned yet.", style = MaterialTheme.typography.titleMedium)
+                            Button(onClick = onAdd) { Text("Add a reminder") }
+                        }
+                    }
+                }
+            } else {
+                items(state.reminders, key = { it.id }) { item ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(item.title, style = MaterialTheme.typography.titleMedium)
+                                    Text(item.startDate.toString(), style = MaterialTheme.typography.bodyMedium)
+                                    item.description?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                                }
+                                Switch(checked = item.enabled, onCheckedChange = { vm.setEnabled(item.id, it) })
+                            }
+                            Button(onClick = { onEdit(item.id) }, modifier = Modifier.fillMaxWidth()) { Text("Edit reminder") }
+                        }
+                    }
+                }
+            }
+            item { androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 88.dp)) }
         }
     }
 }

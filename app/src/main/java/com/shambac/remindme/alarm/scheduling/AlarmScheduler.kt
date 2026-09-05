@@ -71,6 +71,12 @@ class AndroidReminderScheduler @Inject constructor(
     }
 
     override suspend fun scheduleNext(seriesId: ReminderId) = withContext(Dispatchers.IO) {
+        val armedDb = DirectBootMirrorDatabase.get(context)
+        alarmInstanceDao.scheduledForSeries(seriesId).forEach {
+            cancelPendingIntent(it.instanceId)
+            armedDb.alarmDao().delete(it.instanceId)
+        }
+        alarmInstanceDao.cancelPendingForSeries(seriesId)
         if (!exactAlarmCapability.isAvailable()) return@withContext
         val seriesEntity = reminderDao.find(seriesId) ?: return@withContext
         val storedSeries = seriesEntity.toDomain()

@@ -85,6 +85,8 @@ class AlarmRingingService : Service() {
                 Log.e("RemindMeAlarm", "Could not start alarm audio", it)
                 postNotification(AlarmNotifications.NOTIFICATION_ID, AlarmNotifications.audioFailure(this@AlarmRingingService, mirror.title))
             }
+        if (mirror.vibrate) runCatching { startVibration() }.onFailure { Log.e("RemindMeAlarm", "Could not start vibration", it) }
+        if (mirror.speakReminder) speakOnce(mirror)
         if (mirror.maxRingMinutes != -1) {
             delay(mirror.maxRingMinutes * 60_000L)
             finishAsMissed(mirror, startId)

@@ -23,7 +23,7 @@ data class AppSettings(
     val speakReminder: Boolean = false,
     val dateOnlyAlarmTime: String = "09:00",
     val theme: String = "SYSTEM",
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
     val onboardingComplete: Boolean = false,
 )
 
@@ -37,7 +37,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val speak = booleanPreferencesKey("speak_reminder")
         val dateOnlyTime = stringPreferencesKey("date_only_alarm_time")
         val theme = stringPreferencesKey("theme")
-        val dynamic = booleanPreferencesKey("dynamic_color")
+        val dynamic = booleanPreferencesKey("dynamic_color_v2")
         val onboarding = booleanPreferencesKey("onboarding_complete")
     }
 
@@ -46,14 +46,24 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             defaultAlarmSoundUri = prefs[Keys.sound], vibrate = prefs[Keys.vibrate] ?: true,
             snoozeMinutes = prefs[Keys.snooze] ?: 10, maxRingMinutes = prefs[Keys.ring] ?: 10,
             speakReminder = prefs[Keys.speak] ?: false, dateOnlyAlarmTime = prefs[Keys.dateOnlyTime] ?: "09:00",
-            theme = prefs[Keys.theme] ?: "SYSTEM", dynamicColor = prefs[Keys.dynamic] ?: true,
+            theme = prefs[Keys.theme] ?: "SYSTEM", dynamicColor = prefs[Keys.dynamic] ?: false,
             onboardingComplete = prefs[Keys.onboarding] ?: false,
         )
     }
 
     suspend fun update(transform: (AppSettings) -> AppSettings) {
         context.settingsDataStore.edit { p ->
-            val current = AppSettings(p[Keys.sound], p[Keys.vibrate] ?: true, p[Keys.snooze] ?: 10, p[Keys.ring] ?: 10, p[Keys.speak] ?: false, p[Keys.dateOnlyTime] ?: "09:00", p[Keys.theme] ?: "SYSTEM", p[Keys.dynamic] ?: true, p[Keys.onboarding] ?: false)
+            val current = AppSettings(
+                defaultAlarmSoundUri = p[Keys.sound],
+                vibrate = p[Keys.vibrate] ?: true,
+                snoozeMinutes = p[Keys.snooze] ?: 10,
+                maxRingMinutes = p[Keys.ring] ?: 10,
+                speakReminder = p[Keys.speak] ?: false,
+                dateOnlyAlarmTime = p[Keys.dateOnlyTime] ?: "09:00",
+                theme = p[Keys.theme] ?: "SYSTEM",
+                dynamicColor = p[Keys.dynamic] ?: false,
+                onboardingComplete = p[Keys.onboarding] ?: false,
+            )
             val next = transform(current)
             p[Keys.sound] = next.defaultAlarmSoundUri ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString()
             p[Keys.vibrate] = next.vibrate; p[Keys.snooze] = next.snoozeMinutes; p[Keys.ring] = next.maxRingMinutes
