@@ -1,6 +1,8 @@
 package com.shambac.remindme.ui.calendar
 
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -79,7 +82,7 @@ fun CalendarScreen(onBack: () -> Unit, vm: CalendarViewModel = androidx.hilt.nav
         topBar = {
             TopAppBar(
                 title = { Text("Calendar") },
-                navigationIcon = { IconButton(onClick = onBack) { Text("Back") } },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } },
                 actions = {
                     TextButton(onClick = vm::previous) { Text("Prev") }
                     TextButton(onClick = vm::next) { Text("Next") }

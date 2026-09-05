@@ -51,6 +51,7 @@ class AlarmActivity : ComponentActivity() {
         } else {
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         (getSystemService(KEYGUARD_SERVICE) as KeyguardManager).requestDismissKeyguard(this, null)
         instanceId = intent.getStringExtra(AlarmReceiver.EXTRA_INSTANCE_ID).orEmpty()
         lifecycleScope.launch {

@@ -26,6 +26,8 @@ interface ReminderDao {
 
     @Query("DELETE FROM reminder_series WHERE id = :id")
     suspend fun delete(id: String)
+    @Query("DELETE FROM reminder_series WHERE id IN (:ids)")
+    suspend fun deleteAll(ids: List<String>)
 
     @Query("UPDATE reminder_series SET enabled = :enabled, updatedAt = :updatedAt WHERE id = :id")
     suspend fun setEnabled(id: String, enabled: Boolean, updatedAt: Long)

@@ -1,6 +1,8 @@
 package com.shambac.remindme.ui.editor
 
 import android.app.DatePickerDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import android.app.TimePickerDialog
 
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +21,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -28,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
@@ -78,20 +83,20 @@ fun EditorScreen(state: EditorUiState, actions: EditorViewModel, onDone: () -> U
             }.show()
         }
     }
-    Scaffold(topBar = { TopAppBar(title = { Text(if (state.id == null) "Add reminder" else "Edit reminder") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(if (state.id == null) "Add reminder" else "Edit reminder") }, navigationIcon = { IconButton(onClick = onDone) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(state.title, actions::title, Modifier.fillMaxWidth(), label = { Text("Title") }, singleLine = true, isError = state.error != null)
             OutlinedTextField(state.description, actions::description, Modifier.fillMaxWidth(), label = { Text("Description (optional)") }, minLines = 2)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = state.date.toString(), onValueChange = {}, modifier = Modifier.weight(1f), label = { Text("Date") }, readOnly = true)
                 Button(onClick = { datePickerOpen = true }, modifier = Modifier.sizeIn(minWidth = 96.dp, minHeight = 48.dp)) { Text("Choose") }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Date-only reminder")
                 Checkbox(checked = state.dateOnly, onCheckedChange = actions::dateOnly, modifier = Modifier.semantics { contentDescription = "Date-only reminder" })
             }
             if (!state.dateOnly) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = state.time.format(DateTimeFormatter.ofPattern("HH:mm")), onValueChange = {}, modifier = Modifier.weight(1f), label = { Text("Time") }, readOnly = true)
                     Button(onClick = { timePickerOpen = true }, modifier = Modifier.sizeIn(minWidth = 96.dp, minHeight = 48.dp)) { Text("Choose") }
                 }

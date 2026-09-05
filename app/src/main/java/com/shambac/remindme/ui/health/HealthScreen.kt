@@ -1,5 +1,7 @@
 package com.shambac.remindme.ui.health
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,8 +16,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.Instant
@@ -29,7 +33,7 @@ fun HealthScreen(state: HealthUiState, actions: HealthViewModel, onBack: () -> U
         topBar = {
             TopAppBar(
                 title = { Text("Alarm health") },
-                navigationIcon = { IconButton(onClick = onBack) { Text("Back") } },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } },
             )
         },
     ) { padding ->
@@ -58,6 +62,7 @@ fun HealthScreen(state: HealthUiState, actions: HealthViewModel, onBack: () -> U
                         Text("Delivery details", style = MaterialTheme.typography.titleLarge)
                         Text("Alarm volume: ${state.alarmVolume}%${if (state.alarmVolume == 0) " — appears muted." else ""}")
                         Text("Next scheduled alarm: ${state.nextAlarm?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)) } ?: "None"}")
+                        Text("Full-screen UI appears when the device is locked or the screen is off; Android uses a heads-up alarm notification while you are actively using the phone.", style = MaterialTheme.typography.bodyMedium)
                         Text("Android Do Not Disturb controls whether alarm audio may sound. RemindMe does not bypass it.", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
@@ -74,7 +79,7 @@ fun HealthScreen(state: HealthUiState, actions: HealthViewModel, onBack: () -> U
 
 @Composable
 private fun StatusRow(label: String, ok: Boolean, problem: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, style = MaterialTheme.typography.titleMedium)
         Text(if (ok) "Ready" else problem, color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
     }

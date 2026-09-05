@@ -12,7 +12,7 @@ import com.shambac.remindme.alarm.receiver.AlarmActionReceiver
 import com.shambac.remindme.ui.alarm.AlarmActivity
 
 object AlarmNotifications {
-    const val CHANNEL_ID = "alarms_v1"
+    const val CHANNEL_ID = "alarms_v2"
     const val NOTIFICATION_ID = 701
     const val ACTION_STOP = "com.shambac.remindme.STOP"
     const val ACTION_SNOOZE = "com.shambac.remindme.SNOOZE"
@@ -46,6 +46,8 @@ object AlarmNotifications {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
+            .setAutoCancel(false)
+            .setContentIntent(fullScreen)
             .setSilent(true)
             .setFullScreenIntent(fullScreen, true)
             .addAction(0, "Snooze ${snoozeMinutes} min", snooze)

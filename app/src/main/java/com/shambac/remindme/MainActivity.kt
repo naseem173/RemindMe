@@ -9,8 +9,10 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,12 +20,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlaylistAddCheck
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
@@ -35,28 +42,33 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
 import com.shambac.remindme.ui.calendar.CalendarScreen as CalendarCalendarScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.shambac.remindme.domain.model.ReminderSeries
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.shambac.remindme.alarm.scheduling.ReminderScheduler
 import com.shambac.remindme.data.settings.SettingsRepository
 import com.shambac.remindme.ui.editor.EditorScreen
+import com.shambac.remindme.ui.about.AboutScreen
 import com.shambac.remindme.ui.editor.EditorViewModel
 import com.shambac.remindme.ui.health.HealthScreen
 import com.shambac.remindme.ui.health.HealthViewModel
@@ -122,7 +134,8 @@ fun RemindMeApp() {
         composable("edit/{id}") { val vm: EditorViewModel = hiltViewModel(); val id = it.arguments?.getString("id"); LaunchedEffect(id) { vm.load(id) }; EditorScreen(vm.state.collectAsStateWithLifecycle().value, vm, onDone = { nav.popBackStack() }) }
         composable("calendar") { CalendarCalendarScreen(onBack = { nav.popBackStack() }) }
         composable("health") { val vm: HealthViewModel = hiltViewModel(); HealthScreen(vm.state.collectAsStateWithLifecycle().value, vm, onBack = { nav.popBackStack() }) }
-        composable("settings") { AppSettingsScreen(onBack = { nav.popBackStack() }) }
+        composable("settings") { AppSettingsScreen(onBack = { nav.popBackStack() }, onAbout = { nav.navigate("about") }) }
+        composable("about") { AboutScreen(onBack = { nav.popBackStack() }) }
     }
 }
 
@@ -137,20 +150,52 @@ private fun HomeScreen(
     vm: com.shambac.remindme.ui.home.HomeViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var deleteTarget by remember { mutableStateOf<ReminderSeries?>(null) }
+    var bulkDeleteRequested by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("RemindMe") },
+                title = {
+                    if (selectionMode) {
+                        Text("${selectedIds.size} selected")
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Image(painterResource(com.shambac.remindme.R.mipmap.ic_launcher), "RemindMe logo", Modifier.size(32.dp))
+                            Text("RemindMe")
+                        }
+                    }
+                },
+                navigationIcon = {
+                    if (selectionMode) {
+                        IconButton(onClick = { selectionMode = false; selectedIds = emptySet() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Cancel selection")
+                        }
+                    }
+                },
                 actions = {
-                    IconButton(onClick = onCalendar) { Icon(Icons.Default.CalendarMonth, "Open calendar") }
-                    IconButton(onClick = onHealth) { Icon(Icons.Default.HealthAndSafety, "Alarm health") }
-                    IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") }
+                    if (selectionMode) {
+                        IconButton(
+                            onClick = { bulkDeleteRequested = true },
+                            enabled = selectedIds.isNotEmpty(),
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete selected reminders")
+                        }
+                    } else {
+                        IconButton(onClick = onCalendar) { Icon(Icons.Default.CalendarMonth, "Open calendar") }
+                        IconButton(onClick = onHealth) { Icon(Icons.Default.HealthAndSafety, "Alarm health") }
+                        IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") }
+                    }
                 },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAdd, modifier = Modifier.semantics { contentDescription = "Add reminder" }) {
-                Icon(Icons.Default.Add, "Add reminder")
+            if (!selectionMode) {
+                FloatingActionButton(onClick = onAdd, modifier = Modifier.semantics { contentDescription = "Add reminder" }) {
+                    Icon(Icons.Default.Add, "Add reminder")
+                }
             }
         },
     ) { padding ->
@@ -200,7 +245,16 @@ private fun HomeScreen(
                     }
                 }
             }
-            item { Text("All reminders", style = MaterialTheme.typography.titleLarge) }
+            item {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("All reminders", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    if (!selectionMode && state.reminders.isNotEmpty()) {
+                        IconButton(onClick = { selectionMode = true }) {
+                            Icon(Icons.Default.PlaylistAddCheck, contentDescription = "Select reminders")
+                        }
+                    }
+                }
+            }
             if (state.reminders.isEmpty()) {
                 item {
                     Card(Modifier.fillMaxWidth()) {
@@ -214,21 +268,61 @@ private fun HomeScreen(
                 items(state.reminders, key = { it.id }) { item ->
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(item.title, style = MaterialTheme.typography.titleMedium)
                                     Text(item.startDate.toString(), style = MaterialTheme.typography.bodyMedium)
                                     item.description?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                                 }
-                                Switch(checked = item.enabled, onCheckedChange = { vm.setEnabled(item.id, it) })
+                                if (selectionMode) {
+                                    Checkbox(
+                                        checked = item.id in selectedIds,
+                                        onCheckedChange = { checked ->
+                                            selectedIds = if (checked) selectedIds + item.id else selectedIds - item.id
+                                        },
+                                    )
+                                } else {
+                                    Switch(checked = item.enabled, onCheckedChange = { vm.setEnabled(item.id, it) })
+                                    IconButton(onClick = { deleteTarget = item }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete ${item.title}")
+                                    }
+                                }
                             }
-                            Button(onClick = { onEdit(item.id) }, modifier = Modifier.fillMaxWidth()) { Text("Edit reminder") }
+                            Button(onClick = { onEdit(item.id) }, modifier = Modifier.fillMaxWidth(), enabled = !selectionMode) { Text("Edit reminder") }
                         }
                     }
                 }
             }
             item { androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 88.dp)) }
         }
+    }
+
+    deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Delete reminder?") },
+            text = { Text("Delete “${target.title}” and its scheduled alarms?") },
+            confirmButton = {
+                TextButton(onClick = { vm.delete(target.id); deleteTarget = null }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } },
+        )
+    }
+    if (bulkDeleteRequested) {
+        AlertDialog(
+            onDismissRequest = { bulkDeleteRequested = false },
+            title = { Text("Delete selected reminders?") },
+            text = { Text("Delete ${selectedIds.size} reminders and their scheduled alarms?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.deleteAll(selectedIds)
+                    selectedIds = emptySet()
+                    selectionMode = false
+                    bulkDeleteRequested = false
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { bulkDeleteRequested = false }) { Text("Cancel") } },
+        )
     }
 }
 

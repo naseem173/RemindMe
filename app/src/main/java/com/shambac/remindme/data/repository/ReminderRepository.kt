@@ -63,10 +63,15 @@ class ReminderRepository @Inject constructor(
     }
 
     suspend fun delete(id: String) {
-        scheduler.cancelSeries(id)
+        deleteAll(listOf(id))
+    }
+
+    suspend fun deleteAll(ids: Collection<String>) {
+        val distinctIds = ids.filter(String::isNotBlank).distinct()
+        for (id in distinctIds) scheduler.cancelSeries(id)
         database.withTransaction {
-            exceptionDao.deleteForSeries(id)
-            reminderDao.delete(id)
+            for (id in distinctIds) exceptionDao.deleteForSeries(id)
+            if (distinctIds.isNotEmpty()) reminderDao.deleteAll(distinctIds)
         }
     }
 

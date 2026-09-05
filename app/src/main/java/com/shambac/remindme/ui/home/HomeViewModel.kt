@@ -43,6 +43,7 @@ class HomeViewModel @Inject constructor(
     fun search(value: String) { query.value = value }
     fun setEnabled(id: String, enabled: Boolean) { viewModelScope.launch { repository.setEnabled(id, enabled) } }
     fun delete(id: String) { viewModelScope.launch { repository.delete(id) } }
+    fun deleteAll(ids: Set<String>) { viewModelScope.launch { repository.deleteAll(ids) } }
     fun clearError() { }
 }
 
