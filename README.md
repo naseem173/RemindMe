@@ -26,16 +26,7 @@ A private, offline-first Android reminder app with audible alarms.
 
 ## Screenshots
 
-Replace the four placeholders below with screenshots added to `screenshots/`.
-
-<table>
-  <tr>
-    <td align="center">Home<br><code>screenshots/home.png</code></td>
-    <td align="center">Add reminder<br><code>screenshots/add-reminder.png</code></td>
-    <td align="center">Calendar<br><code>screenshots/calendar.png</code></td>
-    <td align="center">Settings<br><code>screenshots/settings.png</code></td>
-  </tr>
-</table>
+<img src="screenshots/showcase.png" alt="screenshots"/>
 
 ## Requirements
 
