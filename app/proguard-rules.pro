@@ -1,0 +1,33 @@
+# iCal4j uses service loading for parsers; keep recurrence types for R8.
+-keep class net.fortuna.ical4j.** { *; }
+-keep class org.mnode.ical4j.** { *; }
+-dontwarn com.github.benmanes.caffeine.cache.Cache
+-dontwarn com.github.benmanes.caffeine.cache.Caffeine
+-dontwarn groovy.lang.GroovyObject
+-dontwarn groovy.lang.MetaClass
+-dontwarn groovy.transform.Generated
+-dontwarn groovy.transform.Internal
+-dontwarn groovy.util.AbstractFactory
+-dontwarn groovy.util.Factory
+-dontwarn groovy.util.FactoryBuilderSupport
+-dontwarn java.beans.Transient
+-dontwarn java.time.zone.ZoneRulesProvider
+-dontwarn org.codehaus.groovy.reflection.ClassInfo
+-dontwarn org.codehaus.groovy.runtime.ScriptBytecodeAdapter
+-dontwarn org.codehaus.groovy.runtime.callsite.CallSite
+-dontwarn org.codehaus.groovy.runtime.callsite.CallSiteArray
+-dontwarn org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation
+-dontwarn org.codehaus.groovy.runtime.typehandling.ShortTypeHandling
+-dontwarn org.codehaus.groovy.runtime.wrappers.Wrapper
+-dontwarn org.joda.convert.ToString
+-dontwarn org.jparsec.OperatorTable
+-dontwarn org.jparsec.Parser$Reference
+-dontwarn org.jparsec.Parser
+-dontwarn org.jparsec.Parsers
+-dontwarn org.jparsec.Scanners
+-dontwarn org.jparsec.Terminals$Builder
+-dontwarn org.jparsec.Terminals$Identifier
+-dontwarn org.jparsec.Terminals$IntegerLiteral
+-dontwarn org.jparsec.Terminals$StringLiteral
+-dontwarn org.jparsec.Terminals
+-dontwarn org.jparsec.functors.Map3

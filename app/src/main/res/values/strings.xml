@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">RemindMe</string>
+    <string name="alarm_channel_name">Reminders</string>
+    <string name="alarm_channel_description">Alarms for your reminders</string>
+</resources>
