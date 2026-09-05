@@ -2,9 +2,9 @@
 
 <p align="center">
   <img src="icons/icon.png" alt="RemindMe logo" width="160" />
+  <br>
+  A private, offline-first Android reminder app with audible alarms.
 </p>
-
-A private, offline-first Android reminder app with audible alarms.
 
 <p align="center">
   <a href="https://github.com/ShambaC/RemindMe/actions/workflows/android.yml"><img src="https://github.com/ShambaC/RemindMe/actions/workflows/android.yml/badge.svg" alt="Android CI" /></a>
