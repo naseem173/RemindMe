@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.shambac.remindme.data.settings.AppSettings
 import com.shambac.remindme.data.settings.SettingsRepository
+import com.shambac.remindme.domain.format.formatTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -60,6 +61,7 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
 fun SettingsScreen(onBack: () -> Unit, onAbout: () -> Unit, vm: SettingsViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val is24Hour = remember { android.text.format.DateFormat.is24HourFormat(context) }
     var timePickerOpen by remember { mutableStateOf(false) }
     val soundPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         @Suppress("DEPRECATION")
@@ -73,7 +75,7 @@ fun SettingsScreen(onBack: () -> Unit, onAbout: () -> Unit, vm: SettingsViewMode
             TimePickerDialog(context, { _, hour, minute ->
                 vm.update { it.copy(dateOnlyAlarmTime = "%02d:%02d".format(hour, minute)) }
                 timePickerOpen = false
-            }, current.hour, current.minute, true).apply {
+            }, current.hour, current.minute, is24Hour).apply {
                 setOnDismissListener { timePickerOpen = false }
             }.show()
         }
@@ -119,7 +121,8 @@ fun SettingsScreen(onBack: () -> Unit, onAbout: () -> Unit, vm: SettingsViewMode
             }
             item {
                 SettingsCard("Date-only reminders") {
-                    Text("Date-only reminders ring at ${state.dateOnlyAlarmTime}.", style = MaterialTheme.typography.bodyMedium)
+                    val dateOnlyTime = runCatching { LocalTime.parse(state.dateOnlyAlarmTime) }.getOrDefault(LocalTime.of(9, 0))
+                    Text("Date-only reminders ring at ${formatTime(dateOnlyTime, is24Hour)}.", style = MaterialTheme.typography.bodyMedium)
                     Button(onClick = { timePickerOpen = true }, modifier = Modifier.fillMaxWidth()) { Text("Choose default time") }
                 }
             }
