@@ -38,11 +38,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.shambac.remindme.domain.format.formatTime
 import java.time.DayOfWeek
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +63,7 @@ fun EditorScreen(state: EditorUiState, actions: EditorViewModel, onDone: () -> U
     var monthlyWeekday by remember { mutableStateOf(state.date.dayOfWeek) }
     var customCount by remember { mutableStateOf("10") }
     val context = LocalContext.current
+    val is24Hour = remember { android.text.format.DateFormat.is24HourFormat(context) }
     LaunchedEffect(datePickerOpen) {
         if (datePickerOpen) {
             DatePickerDialog(context, { _, year, month, day ->
@@ -78,7 +79,7 @@ fun EditorScreen(state: EditorUiState, actions: EditorViewModel, onDone: () -> U
             TimePickerDialog(context, { _, hour, minute ->
                 actions.time(LocalTime.of(hour, minute))
                 timePickerOpen = false
-            }, state.time.hour, state.time.minute, true).apply {
+            }, state.time.hour, state.time.minute, is24Hour).apply {
                 setOnDismissListener { timePickerOpen = false }
             }.show()
         }
@@ -97,7 +98,7 @@ fun EditorScreen(state: EditorUiState, actions: EditorViewModel, onDone: () -> U
             }
             if (!state.dateOnly) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = state.time.format(DateTimeFormatter.ofPattern("HH:mm")), onValueChange = {}, modifier = Modifier.weight(1f), label = { Text("Time") }, readOnly = true)
+                    OutlinedTextField(value = formatTime(state.time, is24Hour), onValueChange = {}, modifier = Modifier.weight(1f), label = { Text("Time") }, readOnly = true)
                     Button(onClick = { timePickerOpen = true }, modifier = Modifier.sizeIn(minWidth = 96.dp, minHeight = 48.dp)) { Text("Choose") }
                 }
             }
